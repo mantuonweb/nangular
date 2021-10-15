@@ -7,4 +7,12 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'nAngular';
+  primeNo;
+  constructor() {
+    const worker = new Worker('./bgworker.worker', { type: 'module' });
+    worker.onmessage = ({ data }) => {
+      this.primeNo = data;
+    };
+    worker.postMessage(231);
+  }
 }
