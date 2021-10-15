@@ -17,6 +17,6 @@ export class AppComponent {
     worker.onmessage = ({ data }) => {
       this.primeNo = data;
     };
-    worker.postMessage(231);
+    worker.postMessage(4000);
   }
 }

@@ -1,5 +1,6 @@
 //https://medium.com/commencis/what-is-service-worker-4f8dc478f0b9
-const VERSION = "version-1.0";
+// Testing Version 2.0
+const VERSION = "version-2.0";
 const NAME = "SAMPLE";
 const SW_CACHE_INSTANCE = NAME + '-' + VERSION;
 const PRECACHED_FILES = ["./", "./noconnection.json"];
@@ -11,20 +12,36 @@ self.addEventListener('install', async (e) => {
 });
 
 self.addEventListener('activate', async (e) => {
-    console.log('Service worker Activated');
-    deleteUnusedObject();
+    console.log('Service worker Activated2');
+    deleteUnusedObject(e);
 });
 
 self.addEventListener('fetch', (e) => {
     const request = e.request;
     const url = new URL(request.url);
     if (url.pathname === "/" || (url.pathname.includes('.js') || url.pathname.includes('.css'))) {
-        e.respondWith(cacheFirst(request));
-    } else if(!url.pathname.includes('sockjs-node')) { //to avoid dev sever url
         e.respondWith(networkFirst(request));
+    } else if (!url.pathname.includes('sockjs-node')) { //to avoid dev sever url
+        e.respondWith(cacheFirst(request));
     }
 });
 
+self.addEventListener("message", event => {
+    if (event.data && event.data.type === 'CHECK_VERSION') {
+        self.clients.matchAll({
+            includeUncontrolled: true,
+            type: 'window',
+        }).then((clients) => {
+            if (clients && clients.length) {
+                // Send a response - the clients
+                // array is ordered by last focused
+                clients.forEach((client)=>{
+                    client.visibilityState === "visible" && client.postMessage({ type: 'CHECK_VERSION', payload: VERSION });
+                })
+            }
+        });
+    }
+});
 
 async function cacheFirst(request) {
     let resp;
@@ -52,7 +69,6 @@ async function networkFirst(request) {
     }
 }
 
-
 async function deleteUnusedObject(event) {
     event.waitUntil(
         (async () => {
@@ -65,4 +81,34 @@ async function deleteUnusedObject(event) {
             })
         })()
     )
+}
+
+
+// Stragies
+async function staleAndRefresh(request) {
+    let resp;
+    const cache = await caches.open(SW_CACHE_INSTANCE);
+    const staleResp = await caches.match(request);
+    if (staleResp) {
+        resp = staleResp;
+        try {
+            const freshFesp = await fetch(request);
+            if (freshFesp) {
+                cache.put(request, freshFesp.clone());
+            }
+        }
+        catch (e) {
+
+        }
+
+    } else {
+        try {
+            resp = await fetch(request);
+            cache.put(request, resp.clone());
+        } catch (e) {
+
+        }
+
+    }
+    return resp;
 }
