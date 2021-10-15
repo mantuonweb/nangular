@@ -25,7 +25,12 @@
             "aot": true,
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              {
+                "glob": "**/*",
+                "input": "./src/app/service-worker",
+                "output": "./"
+              }
             ],
             "styles": [
               "src/styles.scss"
